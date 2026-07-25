@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wissam Snack | وسام سناك</title>
+<meta name="description" content="اطلب أونلاين من وسام سناك - ساندويشات، برغر، شاورما وأكتر. توصيل لكل مناطق صيدا.">
+<meta name="theme-color" content="#0e0c09">
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img src="icons/icon-96.png" alt="Wissam Snack">
+      <div>
+        <div class="brand-name">Wissam Snack</div>
+        <div class="brand-tag" data-i18n="delivery">توصيل لكل مناطق صيدا</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="lang-switch" id="langSwitch">EN</button>
+      <button class="cart-btn" id="cartBtn">
+        🛒
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <h1><span data-i18n="heroTitle1">طعم</span> <span class="span-gold" data-i18n="heroTitleSpan">يحلي</span> <span data-i18n="heroTitle2">جمعتك</span></h1>
+  <p data-i18n="heroSub">اطلب أونلاين من وسام سناك — ساندويشات، برغر، شاورما وأكتر</p>
+  <div class="delivery-pill">🛵 <span data-i18n="delivery">توصيل لكل مناطق صيدا</span></div>
+</section>
+
+<!-- Category tabs -->
+<div class="tabs-wrap">
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<!-- Menu -->
+<main id="menuSections"></main>
+
+<footer class="site-footer">
+  <p>Wissam Snack © 2026 — <a href="https://www.facebook.com/profile.php?id=100076200439151" target="_blank">Facebook</a></p>
+</footer>
+
+<!-- Sticky cart bar -->
+<div class="sticky-cart" id="stickyCart">
+  <span class="label">🛒 <span id="stickyCount">0</span> <span data-i18n="yourCart">سلتك</span></span>
+  <span id="stickyTotal">0</span>
+</div>
+
+<!-- Cart drawer -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="cartDrawer">
+  <div class="drawer-header">
+    <h2 data-i18n="yourCart">سلتك</h2>
+    <button class="close-btn" id="closeDrawerBtn">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-footer">
+    <div class="summary-row total">
+      <span data-i18n="total">المجموع الكلي</span>
+      <span id="drawerTotal">0</span>
+    </div>
+    <button class="primary-btn" id="checkoutBtn" disabled data-i18n="checkout">إتمام الطلب</button>
+  </div>
+</aside>
+
+<!-- Checkout modal -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal">
+    <h2 data-i18n="checkoutTitle">بيانات الطلب</h2>
+    <form id="checkoutForm" novalidate>
+      <div class="field">
+        <label data-i18n="nameLabel">الاسم الكامل</label>
+        <input type="text" id="custName" data-i18n-ph="namePh" placeholder="مثال: أحمد سعيد" required>
+        <div class="field-error" data-i18n="fieldRequired">هذا الحقل مطلوب</div>
+      </div>
+      <div class="field">
+        <label data-i18n="phoneLabel">رقم الموبايل</label>
+        <input type="tel" id="custPhone" data-i18n-ph="phonePh" placeholder="03 123 456" required>
+        <div class="field-error" data-i18n="fieldRequired">هذا الحقل مطلوب</div>
+      </div>
+      <div class="field">
+        <label data-i18n="addressLabel">عنوان التوصيل</label>
+        <textarea id="custAddress" data-i18n-ph="addressPh" placeholder="المنطقة، الشارع، أقرب معلم..." required></textarea>
+        <div class="field-error" data-i18n="fieldRequired">هذا الحقل مطلوب</div>
+      </div>
+      <div class="field">
+        <label data-i18n="noteLabel">ملاحظات (اختياري)</label>
+        <textarea id="custNote" data-i18n-ph="notePh" placeholder="أي تفاصيل إضافية عن الطلب..."></textarea>
+      </div>
+
+      <div class="field">
+        <label data-i18n="payMethod">طريقة الدفع</label>
+        <div class="pay-options">
+          <label class="pay-option selected" data-method="cod">
+            <input type="radio" name="payment" value="cod" checked>
+            <div>
+              <div class="pt-title" data-i18n="cod">الدفع نقداً عند التوصيل</div>
+              <div class="pt-desc" data-i18n="codDesc">ادفع كاش للديلفري عند وصول الطلب</div>
+            </div>
+          </label>
+          <label class="pay-option" data-method="whish">
+            <input type="radio" name="payment" value="whish">
+            <div>
+              <div class="pt-title" data-i18n="whish">الدفع عبر Whish Money</div>
+              <div class="pt-desc" data-i18n="whishDesc">حوّل المبلغ عبر تطبيق Whish ثم أكّد التحويل</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="whish-box" id="whishBox">
+          <div data-i18n="whishInstructions">حوّل المبلغ التالي إلى رقم Whish Money:</div>
+          <div class="num">📱 03 644 720</div>
+          <div><span data-i18n="whishAmount">المبلغ المطلوب</span>: <strong id="whishAmountDisplay">0</strong></div>
+          <div class="whish-actions">
+            <button type="button" id="openWhishBtn" data-i18n="openWhish">افتح تطبيق Whish</button>
+            <button type="button" id="copyWhishBtn" data-i18n="copyNumber">نسخ الرقم</button>
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label data-i18n="whishRefLabel">رقم مرجعي / آخر 4 أرقام من التحويل</label>
+            <input type="text" id="whishRef" data-i18n-ph="whishRefPh" placeholder="لتسهيل تأكيد الدفع من طرفنا">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="primary-btn" data-i18n="placeOrder">تأكيد الطلب عبر واتساب</button>
+    </form>
+    <button class="secondary-btn" id="closeCheckoutBtn" data-i18n="continueShopping">أكمل التسوق</button>
+  </div>
+</div>
+
+<!-- Confirmation modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-box">
+    <div class="icon">✅</div>
+    <h2 data-i18n="orderConfirmedTitle">تم إرسال طلبك!</h2>
+    <p data-i18n="orderConfirmedDesc">بيفتحلك واتساب لتأكيد الطلب مباشرة مع وسام سناك</p>
+    <div class="order-ref" id="orderRefText"></div>
+    <a href="#" id="waLinkBtn" target="_blank" class="primary-btn" style="display:block; text-decoration:none;">WhatsApp</a>
+    <button class="secondary-btn" id="closeConfirmBtn" data-i18n="backToMenu">الرجوع للمنيو</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="menu-data.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
