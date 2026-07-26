@@ -46,6 +46,30 @@
   .login-error{color:#e85d2c; font-size:0.8rem; margin-top:8px; display:none;}
   .empty{text-align:center; color:#a8977a; padding:40px 0;}
   .refresh-note{font-size:0.75rem; color:#a8977a; text-align:center; margin-bottom:14px;}
+
+  .main-tabs{display:flex; gap:8px; margin-bottom:18px; border-bottom:1px solid #35301f; padding-bottom:10px;}
+  .main-tabs button{background:none; border:none; color:#a8977a; font-family:inherit; font-size:1rem; font-weight:800; padding:6px 4px; cursor:pointer; border-bottom:3px solid transparent;}
+  .main-tabs button.active{color:#ffd966; border-bottom-color:#f4b400;}
+
+  .cat-card{background:#1b170f; border:1px solid #35301f; border-radius:14px; padding:14px; margin-bottom:14px;}
+  .cat-head{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .cat-head .cat-name{font-weight:800; color:#ffd966; font-size:1.02rem;}
+  .cat-head .cat-actions{display:flex; gap:6px;}
+  .icon-btn{background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:6px 10px; font-size:0.8rem; cursor:pointer; font-family:inherit;}
+  .icon-btn.danger{color:#e85d2c;}
+  .item-row{display:flex; gap:8px; align-items:center; margin-top:10px; padding-top:10px; border-top:1px dashed #35301f; flex-wrap:wrap;}
+  .item-row input, .item-row select{background:#262015; border:1px solid #35301f; border-radius:8px; padding:8px; color:#f7f1e1; font-family:inherit; font-size:0.85rem;}
+  .item-row .f-name{flex:1 1 140px; min-width:120px;}
+  .item-row .f-price{width:90px;}
+  .item-row .f-tag{width:110px;}
+  .item-row label.avail{display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#a8977a; white-space:nowrap;}
+  .item-row .row-actions{display:flex; gap:6px; margin-inline-start:auto;}
+  .add-cat-form{background:#1b170f; border:1px dashed #f4b400; border-radius:14px; padding:16px; margin-top:10px;}
+  .add-cat-form input{width:100%; background:#262015; border:1px solid #35301f; border-radius:8px; padding:9px; color:#f7f1e1; font-family:inherit; font-size:0.85rem; margin-bottom:8px;}
+  .add-cat-form .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .primary-wide{width:100%; background:#f4b400; color:#1a1204; border:none; border-radius:10px; padding:11px; font-weight:800; cursor:pointer; font-family:inherit; margin-top:6px;}
+  .seed-box{background:#1b170f; border:1px dashed #f4b400; border-radius:14px; padding:20px; text-align:center;}
+  .hint{font-size:0.76rem; color:#a8977a; margin-top:4px;}
 </style>
 </head>
 <body>
@@ -62,20 +86,43 @@
 
 <div class="wrap" id="dashboard" style="display:none;">
   <header>
-    <h1>🧾 طلبات وسام سناك</h1>
+    <h1 id="pageTitle">🧾 طلبات وسام سناك</h1>
     <button onclick="logout()" style="background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer;">خروج</button>
   </header>
 
-  <div class="stats" id="stats"></div>
-  <div class="filters" id="filters"></div>
-  <div class="refresh-note">🔴 تحديث مباشر — الطلبات الجديدة بتظهر تلقائياً</div>
-  <div id="ordersList"></div>
+  <div class="main-tabs" id="mainTabs">
+    <button class="active" data-tab="orders">📋 الطلبات</button>
+    <button data-tab="menu">🍔 المينيو</button>
+  </div>
+
+  <div id="ordersTab">
+    <div class="stats" id="stats"></div>
+    <div class="filters" id="filters"></div>
+    <div class="refresh-note">🔴 تحديث مباشر — الطلبات الجديدة بتظهر تلقائياً</div>
+    <div id="ordersList"></div>
+  </div>
+
+  <div id="menuTab" style="display:none;">
+    <div id="menuSeedBox"></div>
+    <div id="menuCategories"></div>
+    <div class="add-cat-form" id="addCatForm">
+      <div class="cat-head"><span class="cat-name">+ إضافة فئة جديدة</span></div>
+      <div class="grid2" style="margin-top:10px;">
+        <input type="text" id="newCatAr" placeholder="اسم الفئة (عربي) — مثال: مشروبات">
+        <input type="text" id="newCatEn" placeholder="Category name (English) — e.g. Drinks">
+      </div>
+      <input type="text" id="newCatIcon" placeholder="إيموجي للفئة (اختياري) — مثال: 🥤">
+      <button class="primary-wide" id="addCatBtn">حفظ الفئة</button>
+      <div class="hint">رقم تعريف الفئة بينولّد تلقائيًا من الاسم الإنجليزي.</div>
+    </div>
+  </div>
 </div>
 
 <audio id="notifSound" preload="auto">
   <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
 </audio>
 
+<script src="menu-data.js"></script>
 <script src="firebase-config.js"></script>
 <script src="admin.js"></script>
 </body>
