@@ -45,10 +45,10 @@ function showDashboard(){
   startListening();
 }
 
-function fmtMoney(n){ return (n||0).toLocaleString("ar-LB") + " ل.ل"; }
+function fmtMoney(n){ return (n||0).toLocaleString("en-US") + " ل.ل"; }
 function fmtTime(iso){
   try {
-    return new Date(iso).toLocaleString("ar-LB", { dateStyle:"short", timeStyle:"short" });
+    return new Date(iso).toLocaleString("en-GB", { dateStyle:"short", timeStyle:"short" });
   } catch { return ""; }
 }
 
