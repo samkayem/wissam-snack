@@ -112,7 +112,7 @@ function findItem(id){
 
 function fmtPrice(n){
   if (n === null || n === undefined) return t("unavailable");
-  return n.toLocaleString(lang === "ar" ? "ar-LB" : "en-US") + " " + t("lbp");
+  return n.toLocaleString("en-US") + " " + t("lbp");
 }
 
 function saveCart(){ localStorage.setItem("ws_cart", JSON.stringify(cart)); }
