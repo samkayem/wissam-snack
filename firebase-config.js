@@ -29,7 +29,8 @@ let db = null;
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const {
       getFirestore, collection, addDoc, serverTimestamp,
-      onSnapshot, query, orderBy, doc, updateDoc
+      onSnapshot, query, orderBy, doc, updateDoc,
+      setDoc, deleteDoc, getDocs, writeBatch
     } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
     const app = initializeApp(firebaseConfig);
@@ -39,8 +40,11 @@ let db = null;
       await addDoc(collection(db, "orders"), { ...order, serverCreatedAt: serverTimestamp() });
     };
 
-    // Exposed for admin.js (plain script, no ES module imports there)
-    window.__firestore = { db, collection, onSnapshot, query, orderBy, doc, updateDoc };
+    // Exposed for app.js / admin.js (plain scripts, no ES module imports there)
+    window.__firestore = {
+      db, collection, onSnapshot, query, orderBy, doc, updateDoc,
+      addDoc, setDoc, deleteDoc, getDocs, writeBatch, serverTimestamp
+    };
     window.dispatchEvent(new Event("firebase-ready"));
   } catch (e) {
     console.warn("Firebase init failed:", e);
