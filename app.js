@@ -32,7 +32,7 @@ const STR = {
     whishDesc: "حوّل المبلغ عبر تطبيق Whish ثم أكّد التحويل",
     whishInstructions: "حوّل المبلغ التالي إلى رقم Whish Money:",
     whishAmount: "المبلغ المطلوب",
-    openWhish: "افتح تطبيق Whish",
+    openWhish: "نسخ الرقم وفتح Whish",
     copyNumber: "نسخ الرقم",
     whishRefLabel: "رقم مرجعي / آخر 4 أرقام من التحويل",
     whishRefPh: "لتسهيل تأكيد الدفع من طرفنا",
@@ -78,7 +78,7 @@ const STR = {
     whishDesc: "Transfer via the Whish app, then confirm your transfer",
     whishInstructions: "Transfer the following amount to this Whish Money number:",
     whishAmount: "Amount due",
-    openWhish: "Open Whish app",
+    openWhish: "Copy number & open Whish",
     copyNumber: "Copy number",
     whishRefLabel: "Reference / last 4 digits of transfer",
     whishRefPh: "Helps us confirm your payment faster",
@@ -429,11 +429,14 @@ function copyWhishNumber(){
 }
 
 function openWhishApp(){
-  // Attempts a deep link into the Whish app; falls back to showing the number if it fails.
-  const amount = cartTotal();
-  const deepLink = `whish://transfer?phone=${BUSINESS_INFO.whishNumber.replace(/\s/g,"")}&amount=${amount}`;
-  window.location.href = deepLink;
-  setTimeout(()=>{ showToast(lang === "ar" ? "لم يفتح تطبيق Whish؟ استخدم الرقم يدوياً" : "Whish app didn't open? Use the number manually"); }, 1200);
+  // No documented public deep link exists for Whish, and attempting a fake
+  // scheme (whish://...) triggers an ugly OS-level "invalid address" error
+  // on iOS/Safari. Safer approach: just guide the customer to open the app
+  // themselves and use the number/amount shown above.
+  copyWhishNumber();
+  showToast(lang === "ar"
+    ? "افتح تطبيق Whish من هاتفك وحوّل للرقم المنسوخ 📋"
+    : "Open the Whish app on your phone and transfer to the copied number 📋");
 }
 
 /* ---------------- Toast ---------------- */
@@ -465,7 +468,6 @@ function init(){
   document.getElementById("closeCheckoutBtn").onclick = closeCheckout;
   document.getElementById("checkoutForm").addEventListener("submit", (e)=>{ e.preventDefault(); submitOrder(); });
   document.getElementById("closeConfirmBtn").onclick = closeConfirm;
-  document.getElementById("copyWhishBtn").onclick = copyWhishNumber;
   document.getElementById("openWhishBtn").onclick = openWhishApp;
 
   document.querySelectorAll(".pay-option").forEach(el=>{
