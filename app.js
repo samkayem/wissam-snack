@@ -98,12 +98,13 @@ const STR = {
 let lang = localStorage.getItem("ws_lang") || "ar";
 let cart = JSON.parse(localStorage.getItem("ws_cart") || "{}"); // {itemId: qty}
 let selectedPayment = "cod";
+let activeMenu = MENU_CATEGORIES; // static fallback; replaced live once Firestore data arrives
 let activeCategory = MENU_CATEGORIES[0].id;
 
 function t(key){ return STR[lang][key]; }
 
 function findItem(id){
-  for (const cat of MENU_CATEGORIES){
+  for (const cat of activeMenu){
     const it = cat.items.find(i => i.id === id);
     if (it) return it;
   }
@@ -145,8 +146,7 @@ function applyLanguage(){
 function renderTabs(){
   const tabs = document.getElementById("tabs");
   tabs.innerHTML = "";
-  MENU_CATEGORIES.forEach(cat=>{
-    const btn = document.createElement("button");
+  activeMenu.forEach(cat=>{
     btn.className = "tab" + (cat.id === activeCategory ? " active" : "");
     btn.textContent = `${cat.icon} ${cat.name[lang]}`;
     btn.onclick = () => {
@@ -161,7 +161,7 @@ function renderTabs(){
 function renderMenu(){
   const wrap = document.getElementById("menuSections");
   wrap.innerHTML = "";
-  MENU_CATEGORIES.forEach(cat=>{
+  activeMenu.forEach(cat=>{
     const section = document.createElement("section");
     section.className = "category-section";
     section.id = `cat-${cat.id}`;
@@ -450,6 +450,57 @@ function showToast(msg){
   toastTimer = setTimeout(()=> el.classList.remove("show"), 2000);
 }
 
+let liveMenuCats = null;
+let liveMenuItems = null;
+
+function buildMenuFromLive(){
+  if (!liveMenuCats || !liveMenuItems) return null;
+  return liveMenuCats
+    .sort((a,b)=>(a.order||0)-(b.order||0))
+    .map(cat => ({
+      id: cat.id,
+      icon: cat.icon || "🍽️",
+      name: { ar: cat.nameAr, en: cat.nameEn },
+      items: liveMenuItems
+        .filter(i => i.categoryId === cat.id)
+        .sort((a,b)=>(a.order||0)-(b.order||0))
+        .map(i => ({
+          id: i.id,
+          name: { ar: i.nameAr, en: i.nameEn },
+          price: i.available === false ? null : (i.price ?? null),
+          tag: i.tag || null
+        }))
+    }))
+    .filter(cat => cat.items.length > 0);
+}
+
+function applyLiveMenuIfReady(){
+  const built = buildMenuFromLive();
+  if (!built || built.length === 0) return; // keep static fallback until live data exists
+  activeMenu = built;
+  if (!activeMenu.some(c => c.id === activeCategory)) activeCategory = activeMenu[0].id;
+  renderTabs();
+  renderMenu();
+  renderCart();
+}
+
+function loadLiveMenu(){
+  if (!window.__firestore){
+    window.addEventListener("firebase-ready", loadLiveMenu, { once:true });
+    return;
+  }
+  const { db, collection, onSnapshot, query, orderBy } = window.__firestore;
+  onSnapshot(query(collection(db, "menu_categories"), orderBy("order","asc")), (snap)=>{
+    liveMenuCats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applyLiveMenuIfReady();
+  }, ()=>{ /* keep static fallback on error */ });
+
+  onSnapshot(query(collection(db, "menu_items"), orderBy("order","asc")), (snap)=>{
+    liveMenuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applyLiveMenuIfReady();
+  }, ()=>{});
+}
+
 /* ---------------- Init ---------------- */
 
 function toggleLang(){
@@ -480,6 +531,7 @@ function init(){
 
   applyLanguage();
   selectPayment("cod");
+  loadLiveMenu();
 
   if ("serviceWorker" in navigator){
     navigator.serviceWorker.register("service-worker.js").catch(()=>{});
