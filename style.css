@@ -245,8 +245,8 @@ html[dir="rtl"] .drawer.open{transform: translateX(0);}
 .whish-box .num{font-weight:900; color:var(--gold-light); font-size:1.05rem; letter-spacing:0.02em; margin:6px 0;}
 .whish-actions{display:flex; gap:8px; margin-top:8px;}
 .whish-actions button, .whish-actions a{
-  flex:1; text-align:center; font-size:0.78rem; font-weight:700; padding:8px; border-radius:8px;
-  background: var(--bg); border:1px solid var(--line); color:var(--cream);
+  flex:1; text-align:center; font-size:0.82rem; font-weight:800; padding:10px; border-radius:8px;
+  background: var(--gold); border:1px solid var(--gold); color:#1a1204;
 }
 
 /* ---------- Modal (checkout) ---------- */
