@@ -164,6 +164,7 @@ a{color:inherit;}
 }
 html[dir="rtl"] .drawer{ transform: translateX(-100%); }
 .drawer.open{transform: translateX(0);}
+html[dir="rtl"] .drawer.open{transform: translateX(0);}
 
 .drawer-header{
   display:flex; align-items:center; justify-content:space-between; padding:16px;
