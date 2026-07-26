@@ -406,4 +406,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
   document.getElementById("pinInput").addEventListener("keydown", e=>{ if (e.key === "Enter") tryLogin(); });
   document.getElementById("addCatBtn").onclick = addNewCategory;
   if (sessionStorage.getItem("ws_admin_ok") === "1") showDashboard();
+
+  if ("serviceWorker" in navigator){
+    navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+  }
 });
