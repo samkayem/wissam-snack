@@ -147,6 +147,7 @@ function renderTabs(){
   const tabs = document.getElementById("tabs");
   tabs.innerHTML = "";
   activeMenu.forEach(cat=>{
+    const btn = document.createElement("button");
     btn.className = "tab" + (cat.id === activeCategory ? " active" : "");
     btn.textContent = `${cat.icon} ${cat.name[lang]}`;
     btn.onclick = () => {
