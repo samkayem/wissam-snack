@@ -429,12 +429,23 @@ function copyWhishNumber(){
   });
 }
 
+function attemptSilentAppOpen(url){
+  // Best-effort only: Whish has no documented/public URL scheme, so this is a
+  // guess. Using a hidden iframe (instead of window.location) means that if
+  // the scheme is invalid, the failure stays silent — no OS-level error
+  // dialog like the one we hit before with a direct navigation attempt.
+  try {
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    setTimeout(()=>{ iframe.remove(); }, 1500);
+  } catch (e) { /* ignore — silent by design */ }
+}
+
 function openWhishApp(){
-  // No documented public deep link exists for Whish, and attempting a fake
-  // scheme (whish://...) triggers an ugly OS-level "invalid address" error
-  // on iOS/Safari. Safer approach: just guide the customer to open the app
-  // themselves and use the number/amount shown above.
   copyWhishNumber();
+  attemptSilentAppOpen("whish://");
   showToast(lang === "ar"
     ? "افتح تطبيق Whish من هاتفك وحوّل للرقم المنسوخ 📋"
     : "Open the Whish app on your phone and transfer to the copied number 📋");
