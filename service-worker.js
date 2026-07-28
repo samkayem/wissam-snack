@@ -1,6 +1,5 @@
-const CACHE_NAME = "wissam-snack-v5";
+const CACHE_NAME = "wissam-snack-v6";
 const ASSETS = [
-  "./",
   "./index.html",
   "./style.css",
   "./app.js",
@@ -29,12 +28,20 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  // Let page navigations (opening the app / clicking the home-screen icon) go
+  // straight to the network. iOS Safari refuses to render a response that came
+  // through a redirect if it was served via a service worker's respondWith(),
+  // even a same-origin one — this sidesteps that entirely for navigations.
+  if (event.request.mode === "navigate") return;
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
         cached ||
         fetch(event.request)
           .then((res) => {
+            if (!res || !res.ok || res.redirected) return res; // don't cache redirects/errors
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
             return res;
