@@ -21,7 +21,7 @@
 // Without this, ordering/admin still works normally — you just won't
 // get push notifications when the admin app is closed.
 // ============================================================
-const FCM_VAPID_KEY = "REPLACE_ME_VAPID_KEY";
+const FCM_VAPID_KEY = "BK3hr2dZ_A2bKbL33N1RIu7Fs-TTrYnCJDzZ3AzTEawpBhyypLfoOx6LC6JmbtZikDSCNQKtQDjL9lwmxaE5fuA";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDAolzoI_4YTsXULSmkItfY6YvHa3yXpZg",
