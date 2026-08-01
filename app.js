@@ -28,14 +28,6 @@ const STR = {
     payMethod: "طريقة الدفع",
     cod: "الدفع نقداً عند التوصيل",
     codDesc: "ادفع كاش للديلفري عند وصول الطلب",
-    whish: "الدفع عبر Whish Money",
-    whishDesc: "حوّل المبلغ عبر تطبيق Whish ثم أكّد التحويل",
-    whishInstructions: "حوّل المبلغ التالي إلى رقم Whish Money:",
-    whishAmount: "المبلغ المطلوب",
-    openWhish: "نسخ الرقم وفتح Whish",
-    copyNumber: "نسخ الرقم",
-    whishRefLabel: "رقم مرجعي / آخر 4 أرقام من التحويل",
-    whishRefPh: "لتسهيل تأكيد الدفع من طرفنا",
     placeOrder: "تأكيد الطلب عبر واتساب",
     fieldRequired: "هذا الحقل مطلوب",
     phoneInvalid: "الرجاء إدخال رقم موبايل صحيح",
@@ -74,14 +66,6 @@ const STR = {
     payMethod: "Payment Method",
     cod: "Cash on Delivery",
     codDesc: "Pay cash to the delivery rider on arrival",
-    whish: "Pay via Whish Money",
-    whishDesc: "Transfer via the Whish app, then confirm your transfer",
-    whishInstructions: "Transfer the following amount to this Whish Money number:",
-    whishAmount: "Amount due",
-    openWhish: "Copy number & open Whish",
-    copyNumber: "Copy number",
-    whishRefLabel: "Reference / last 4 digits of transfer",
-    whishRefPh: "Helps us confirm your payment faster",
     placeOrder: "Confirm order via WhatsApp",
     fieldRequired: "This field is required",
     phoneInvalid: "Please enter a valid mobile number",
@@ -97,7 +81,6 @@ const STR = {
 
 let lang = localStorage.getItem("ws_lang") || "ar";
 let cart = JSON.parse(localStorage.getItem("ws_cart") || "{}"); // {itemId: qty}
-let selectedPayment = "cod";
 let activeMenu = MENU_CATEGORIES; // static fallback; replaced live once Firestore data arrives
 let activeCategory = MENU_CATEGORIES[0].id;
 
@@ -275,9 +258,6 @@ function renderCart(){
 
   document.getElementById("drawerTotal").textContent = fmtPrice(cartTotal());
   document.getElementById("checkoutBtn").disabled = entries.length === 0;
-
-  const whishAmountEl = document.getElementById("whishAmountDisplay");
-  if (whishAmountEl) whishAmountEl.textContent = fmtPrice(cartTotal());
 }
 
 function openDrawer(){
@@ -297,15 +277,6 @@ function openCheckout(){
 }
 function closeCheckout(){
   document.getElementById("checkoutModal").classList.remove("open");
-}
-
-function selectPayment(method){
-  selectedPayment = method;
-  document.querySelectorAll(".pay-option").forEach(el=>{
-    el.classList.toggle("selected", el.dataset.method === method);
-    el.querySelector("input").checked = el.dataset.method === method;
-  });
-  document.getElementById("whishBox").classList.toggle("show", method === "whish");
 }
 
 function validateField(input){
@@ -336,7 +307,7 @@ function validateCheckoutForm(){
 
 function buildOrderSummaryText(order){
   const lines = order.items.map(i => `• ${i.name} x${i.qty} — ${fmtPrice(i.price*i.qty)}`).join("\n");
-  const payLabel = order.payment === "whish" ? "Whish Money" : (lang === "ar" ? "نقداً عند التوصيل" : "Cash on Delivery");
+  const payLabel = lang === "ar" ? "نقداً عند التوصيل" : "Cash on Delivery";
   if (lang === "ar"){
     return `طلب جديد من وسام سناك 🧾\n` +
       `رقم الطلب: ${order.ref}\n\n` +
@@ -346,8 +317,7 @@ function buildOrderSummaryText(order){
       (order.note ? `ملاحظات: ${order.note}\n` : "") +
       `\nالطلبية:\n${lines}\n\n` +
       `المجموع الكلي: ${fmtPrice(order.total)}\n` +
-      `طريقة الدفع: ${payLabel}` +
-      (order.payment === "whish" && order.whishRef ? `\nمرجع التحويل: ${order.whishRef}` : "");
+      `طريقة الدفع: ${payLabel}`;
   }
   return `New order from Wissam Snack 🧾\n` +
     `Order ref: ${order.ref}\n\n` +
@@ -357,8 +327,7 @@ function buildOrderSummaryText(order){
     (order.note ? `Notes: ${order.note}\n` : "") +
     `\nItems:\n${lines}\n\n` +
     `Total: ${fmtPrice(order.total)}\n` +
-    `Payment: ${payLabel}` +
-    (order.payment === "whish" && order.whishRef ? `\nTransfer ref: ${order.whishRef}` : "");
+    `Payment: ${payLabel}`;
 }
 
 function genOrderRef(){
@@ -383,8 +352,7 @@ async function submitOrder(){
     note: document.getElementById("custNote").value.trim(),
     items,
     total: cartTotal(),
-    payment: selectedPayment,
-    whishRef: selectedPayment === "whish" ? document.getElementById("whishRef").value.trim() : "",
+    payment: "cod",
     lang,
     createdAt: new Date().toISOString(),
     status: "new"
@@ -418,37 +386,6 @@ async function submitOrder(){
 function closeConfirm(){
   document.getElementById("confirmModal").classList.remove("open");
   document.getElementById("checkoutForm").reset();
-  selectPayment("cod");
-}
-
-/* ---------------- Whish helpers ---------------- */
-
-function copyWhishNumber(){
-  navigator.clipboard.writeText(BUSINESS_INFO.whishNumber.replace(/\s/g,"")).then(()=>{
-    showToast(t("copied"));
-  });
-}
-
-function attemptSilentAppOpen(url){
-  // Best-effort only: Whish has no documented/public URL scheme, so this is a
-  // guess. Using a hidden iframe (instead of window.location) means that if
-  // the scheme is invalid, the failure stays silent — no OS-level error
-  // dialog like the one we hit before with a direct navigation attempt.
-  try {
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = url;
-    document.body.appendChild(iframe);
-    setTimeout(()=>{ iframe.remove(); }, 1500);
-  } catch (e) { /* ignore — silent by design */ }
-}
-
-function openWhishApp(){
-  copyWhishNumber();
-  attemptSilentAppOpen("whish://");
-  showToast(lang === "ar"
-    ? "افتح تطبيق Whish من هاتفك وحوّل للرقم المنسوخ 📋"
-    : "Open the Whish app on your phone and transfer to the copied number 📋");
 }
 
 /* ---------------- Toast ---------------- */
@@ -531,18 +468,12 @@ function init(){
   document.getElementById("closeCheckoutBtn").onclick = closeCheckout;
   document.getElementById("checkoutForm").addEventListener("submit", (e)=>{ e.preventDefault(); submitOrder(); });
   document.getElementById("closeConfirmBtn").onclick = closeConfirm;
-  document.getElementById("openWhishBtn").onclick = openWhishApp;
-
-  document.querySelectorAll(".pay-option").forEach(el=>{
-    el.onclick = () => selectPayment(el.dataset.method);
-  });
 
   document.getElementById("custPhone").addEventListener("input", function(){
     this.closest(".field").querySelector(".field-error").textContent = t("fieldRequired");
   });
 
   applyLanguage();
-  selectPayment("cod");
   loadLiveMenu();
 
   if ("serviceWorker" in navigator){
