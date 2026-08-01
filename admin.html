@@ -95,7 +95,10 @@
 <div class="wrap" id="dashboard" style="display:none;">
   <header>
     <h1 id="pageTitle">🧾 طلبات وسام سناك</h1>
-    <button onclick="logout()" style="background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer;">خروج</button>
+    <div style="display:flex; gap:8px;">
+      <button id="enableNotifBtn" style="background:#f4b400; color:#1a1204; border:none; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer; font-weight:800;">🔔 تفعيل الإشعارات</button>
+      <button onclick="logout()" style="background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer;">خروج</button>
+    </div>
   </header>
 
   <div class="main-tabs" id="mainTabs">
