@@ -12,6 +12,17 @@
 //    orders to the admin panel.
 // ============================================================
 
+// ============================================================
+// Push notifications (Firebase Cloud Messaging)
+// ------------------------------------------------------------
+// 1) Firebase Console → Project settings → Cloud Messaging tab →
+//    "Web configuration" → Web Push certificates → Generate key pair.
+// 2) Paste the generated key below instead of REPLACE_ME_VAPID_KEY.
+// Without this, ordering/admin still works normally — you just won't
+// get push notifications when the admin app is closed.
+// ============================================================
+const FCM_VAPID_KEY = "REPLACE_ME_VAPID_KEY";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDAolzoI_4YTsXULSmkItfY6YvHa3yXpZg",
   authDomain: "wissam-snack.firebaseapp.com",
@@ -45,6 +56,19 @@ let db = null;
       db, collection, onSnapshot, query, orderBy, doc, updateDoc,
       addDoc, setDoc, deleteDoc, getDocs, writeBatch, serverTimestamp
     };
+
+    // Messaging (foreground token + foreground message handling).
+    // Background messages (app closed / tab not focused) are handled
+    // separately inside service-worker.js.
+    try {
+      const { getMessaging, getToken, onMessage } =
+        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+      const messaging = getMessaging(app);
+      window.__messaging = { messaging, getToken, onMessage, vapidKey: FCM_VAPID_KEY };
+    } catch (e) {
+      console.warn("Messaging init failed (push notifications unavailable):", e);
+    }
+
     window.dispatchEvent(new Event("firebase-ready"));
   } catch (e) {
     console.warn("Firebase init failed:", e);
