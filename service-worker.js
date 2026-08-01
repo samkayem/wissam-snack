@@ -1,4 +1,52 @@
-const CACHE_NAME = "wissam-snack-v8";
+// ============================================================
+// Push notifications (background) — Firebase Cloud Messaging
+// This runs even when no tab/app window is open, which is what
+// lets the badge count on the home-screen icon update instantly.
+// ============================================================
+importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
+
+firebase.initializeApp({
+  apiKey: "AIzaSyDAolzoI_4YTsXULSmkItfY6YvHa3yXpZg",
+  authDomain: "wissam-snack.firebaseapp.com",
+  projectId: "wissam-snack",
+  storageBucket: "wissam-snack.firebasestorage.app",
+  messagingSenderId: "503317111404",
+  appId: "1:503317111404:web:49af00ed1148629b6bee49"
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  const badgeCount = payload.data && payload.data.badgeCount !== undefined ? Number(payload.data.badgeCount) : undefined;
+
+  if (payload.notification){
+    self.registration.showNotification(payload.notification.title || "طلب جديد – وسام سناك", {
+      body: payload.notification.body || "",
+      icon: "icons/icon-192.png",
+      badge: "icons/icon-96.png",
+      data: payload.data || {}
+    });
+  }
+
+  if (badgeCount !== undefined && self.navigator && self.navigator.setAppBadge){
+    if (badgeCount > 0) self.navigator.setAppBadge(badgeCount).catch(()=>{});
+    else if (self.navigator.clearAppBadge) self.navigator.clearAppBadge().catch(()=>{});
+  }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clientsArr) => {
+      const existing = clientsArr.find((c) => c.url.includes("admin.html"));
+      if (existing) return existing.focus();
+      return self.clients.openWindow("./admin.html");
+    })
+  );
+});
+
+const CACHE_NAME = "wissam-snack-v9";
 const ASSETS = [
   "./index.html",
   "./style.css",
