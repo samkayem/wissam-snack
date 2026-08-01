@@ -106,32 +106,11 @@
       <div class="field">
         <label data-i18n="payMethod">طريقة الدفع</label>
         <div class="pay-options">
-          <label class="pay-option selected" data-method="cod">
-            <input type="radio" name="payment" value="cod" checked>
+          <div class="pay-option selected">
             <div>
               <div class="pt-title" data-i18n="cod">الدفع نقداً عند التوصيل</div>
               <div class="pt-desc" data-i18n="codDesc">ادفع كاش للديلفري عند وصول الطلب</div>
             </div>
-          </label>
-          <label class="pay-option" data-method="whish">
-            <input type="radio" name="payment" value="whish">
-            <div>
-              <div class="pt-title" data-i18n="whish">الدفع عبر Whish Money</div>
-              <div class="pt-desc" data-i18n="whishDesc">حوّل المبلغ عبر تطبيق Whish ثم أكّد التحويل</div>
-            </div>
-          </label>
-        </div>
-
-        <div class="whish-box" id="whishBox">
-          <div data-i18n="whishInstructions">حوّل المبلغ التالي إلى رقم Whish Money:</div>
-          <div class="num">📱 03 644 720</div>
-          <div><span data-i18n="whishAmount">المبلغ المطلوب</span>: <strong id="whishAmountDisplay">0</strong></div>
-          <div class="whish-actions">
-            <button type="button" id="openWhishBtn" data-i18n="openWhish">نسخ الرقم وفتح Whish</button>
-          </div>
-          <div class="field" style="margin-top:10px;">
-            <label data-i18n="whishRefLabel">رقم مرجعي / آخر 4 أرقام من التحويل</label>
-            <input type="text" id="whishRef" data-i18n-ph="whishRefPh" placeholder="لتسهيل تأكيد الدفع من طرفنا">
           </div>
         </div>
       </div>
