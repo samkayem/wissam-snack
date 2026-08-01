@@ -44,6 +44,7 @@ function showDashboard(){
   document.getElementById("dashboard").style.display = "block";
   startListening();
   initMainTabs();
+  if (navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{});
 }
 
 function initMainTabs(){
@@ -401,10 +402,74 @@ async function seedMenuFromDefaults(){
   }
 }
 
+// ============================================================
+// Push notifications (enable button + foreground handling)
+// ============================================================
+
+async function enableNotifications(){
+  const btn = document.getElementById("enableNotifBtn");
+  if (!("Notification" in window)){
+    alert("هذا المتصفح ما بيدعم الإشعارات.");
+    return;
+  }
+  if (!window.__messaging){
+    alert("الإشعارات لسا غير مهيّأة بالكود (تأكد من إضافة مفتاح VAPID بملف firebase-config.js).");
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted"){
+    alert("لازم توافق على إذن الإشعارات من المتصفح لتفعيلها.");
+    return;
+  }
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const { messaging, getToken, vapidKey } = window.__messaging;
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+    if (!token){
+      alert("تعذر الحصول على رمز الإشعارات. جرب من جديد.");
+      return;
+    }
+    const { db, doc, setDoc, serverTimestamp } = window.__firestore;
+    await setDoc(doc(db, "push_tokens", token), {
+      token, platform: navigator.userAgent, updatedAt: serverTimestamp()
+    });
+    btn.textContent = "🔔 الإشعارات مفعّلة ✓";
+    btn.disabled = true;
+    localStorage.setItem("ws_admin_notifs_enabled", "1");
+  } catch (e) {
+    alert("تعذر تفعيل الإشعارات: " + e.message);
+  }
+}
+
+function setupForegroundMessaging(){
+  if (!window.__messaging) {
+    window.addEventListener("firebase-ready", setupForegroundMessaging, { once:true });
+    return;
+  }
+  const { messaging, onMessage } = window.__messaging;
+  onMessage(messaging, (payload) => {
+    if (!payload.notification) return; // silent badge-only update, nothing to show
+    document.getElementById("notifSound").play().catch(()=>{});
+    const title = payload.notification.title || "طلب جديد";
+    const body = payload.notification.body || "";
+    if (Notification.permission === "granted"){
+      new Notification(title, { body, icon: "icons/icon-192.png" });
+    }
+  });
+}
+
+
 document.addEventListener("DOMContentLoaded", ()=>{
   document.getElementById("loginBtn").onclick = tryLogin;
   document.getElementById("pinInput").addEventListener("keydown", e=>{ if (e.key === "Enter") tryLogin(); });
   document.getElementById("addCatBtn").onclick = addNewCategory;
+  document.getElementById("enableNotifBtn").onclick = enableNotifications;
+  if (localStorage.getItem("ws_admin_notifs_enabled") === "1"){
+    const btn = document.getElementById("enableNotifBtn");
+    btn.textContent = "🔔 الإشعارات مفعّلة ✓";
+    btn.disabled = true;
+  }
+  setupForegroundMessaging();
   if (sessionStorage.getItem("ws_admin_ok") === "1") showDashboard();
 
   if ("serviceWorker" in navigator){
