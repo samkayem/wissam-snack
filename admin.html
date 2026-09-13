@@ -96,6 +96,7 @@
   <header>
     <h1 id="pageTitle">🧾 طلبات وسام سناك</h1>
     <div style="display:flex; gap:8px;">
+      <a href="kds.html" style="background:#3fae5a; color:#0e0c09; border:none; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer; font-weight:800; text-decoration:none; display:flex; align-items:center;">🍳 شاشة المطبخ</a>
       <button id="enableNotifBtn" style="background:#f4b400; color:#1a1204; border:none; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer; font-weight:800;">🔔 تفعيل الإشعارات</button>
       <button onclick="logout()" style="background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer;">خروج</button>
     </div>
@@ -104,6 +105,7 @@
   <div class="main-tabs" id="mainTabs">
     <button class="active" data-tab="orders">📋 الطلبات</button>
     <button data-tab="menu">🍔 المينيو</button>
+    <button data-tab="options">⚙️ خيارات التخصيص</button>
   </div>
 
   <div id="ordersTab">
@@ -127,11 +129,17 @@
       <div class="hint">رقم تعريف الفئة بينولّد تلقائيًا من الاسم الإنجليزي.</div>
     </div>
   </div>
+
+  <div id="optionsTab" style="display:none;">
+    <div id="optionsSeedBox"></div>
+    <div id="optionsGroups"></div>
+  </div>
 </div>
 
 <audio id="notifSound" preload="auto">
   <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
 </audio>
+
 
 <script src="menu-data.js"></script>
 <script src="firebase-config.js"></script>
