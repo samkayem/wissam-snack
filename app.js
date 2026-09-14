@@ -8,6 +8,7 @@ const STR = {
     heroSub: "اطلب أونلاين من وسام سناك — ساندويشات، برغر، شاورما وأكتر",
     delivery: "توصيل لكل مناطق صيدا",
     addToCart: "أضف للسلة",
+    customize: "تخصيص",
     unavailable: "غير متوفر حالياً",
     yourCart: "سلتك",
     cartEmpty: "السلة فاضية، ضيف شي طيب من المنيو 😋",
@@ -37,7 +38,16 @@ const STR = {
     backToMenu: "الرجوع للمنيو",
     copied: "تم النسخ ✓",
     itemAdded: "تمت الإضافة للسلة",
-    lbp: "ل.ل"
+    lbp: "ل.ل",
+    czBread: "🍞 نوع الخبز",
+    czToast: "🔥 التحميص",
+    czVeggies: "🥬 الخضار والإضافات",
+    czSauces: "🌶️ الصلصات",
+    czExtras: "➕ إضافات مدفوعة (اختياري)",
+    czNormal: "عادي",
+    czExtra: "إكسترا",
+    czOnSide: "على جنب",
+    czWithout: "بدون"
   },
   en: {
     dir: "ltr",
@@ -46,6 +56,7 @@ const STR = {
     heroSub: "Order online from Wissam Snack — sandwiches, burgers, shawarma & more",
     delivery: "Delivery to all areas of Sidon",
     addToCart: "Add to cart",
+    customize: "Customize",
     unavailable: "Currently unavailable",
     yourCart: "Your Cart",
     cartEmpty: "Your cart is empty — grab something tasty from the menu 😋",
@@ -75,14 +86,24 @@ const STR = {
     backToMenu: "Back to menu",
     copied: "Copied ✓",
     itemAdded: "Added to cart",
-    lbp: "LBP"
+    lbp: "LBP",
+    czBread: "🍞 Bread type",
+    czToast: "🔥 Toasting",
+    czVeggies: "🥬 Veggies & toppings",
+    czSauces: "🌶️ Sauces",
+    czExtras: "➕ Paid extras (optional)",
+    czNormal: "Normal",
+    czExtra: "Extra",
+    czOnSide: "On the side",
+    czWithout: "Without"
   }
 };
 
 let lang = localStorage.getItem("ws_lang") || "ar";
-let cart = JSON.parse(localStorage.getItem("ws_cart") || "{}"); // {itemId: qty}
+let cart = JSON.parse(localStorage.getItem("ws_cart") || "[]"); // array of cart lines
 let activeMenu = MENU_CATEGORIES; // static fallback; replaced live once Firestore data arrives
 let activeCategory = MENU_CATEGORIES[0].id;
+let activeOptions = CUSTOMIZATION_DEFAULTS; // static fallback; replaced live once Firestore data arrives
 
 function t(key){ return STR[lang][key]; }
 
@@ -101,13 +122,8 @@ function fmtPrice(n){
 
 function saveCart(){ localStorage.setItem("ws_cart", JSON.stringify(cart)); }
 
-function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
-function cartTotal(){
-  return Object.entries(cart).reduce((sum,[id,qty])=>{
-    const it = findItem(id);
-    return sum + (it && it.price ? it.price * qty : 0);
-  }, 0);
-}
+function cartCount(){ return cart.reduce((sum, line) => sum + line.qty, 0); }
+function cartTotal(){ return cart.reduce((sum, line) => sum + line.unitPrice * line.qty, 0); }
 
 /* ---------------- Rendering ---------------- */
 
@@ -164,7 +180,6 @@ function renderItemCard(item){
   const card = document.createElement("div");
   card.className = "item-card";
   const tagHtml = item.tag ? `<div class="tag ${item.tag}">${item.tag === "zinger" ? "🔥 ZINGER" : "⭐ " + (lang==="ar"?"الأكثر طلباً":"Popular")}</div>` : "";
-  const qty = cart[item.id] || 0;
   const priceHtml = item.price === null
     ? `<div class="item-unavailable">${t("unavailable")}</div>`
     : `<div class="item-price">${fmtPrice(item.price)}</div>`;
@@ -176,38 +191,221 @@ function renderItemCard(item){
     <div class="control-slot"></div>
   `;
   const slot = card.querySelector(".control-slot");
-  renderItemControl(slot, item, qty);
+  if (item.price !== null){
+    const btn = document.createElement("button");
+    btn.className = "add-btn";
+    btn.textContent = `🥪 ${t("customize")}`;
+    btn.onclick = () => openCustomizer(item);
+    slot.appendChild(btn);
+  }
   return card;
 }
 
-function renderItemControl(slot, item, qty){
-  if (item.price === null){
-    slot.innerHTML = "";
-    return;
+/* ---------------- Item Customizer ---------------- */
+
+let czItem = null;
+let czQty = 1;
+let czState = { bread: null, toast: null, veggies: {}, sauces: {}, extras: {} };
+
+function openCustomizer(item){
+  czItem = item;
+  czQty = 1;
+  const opts = activeOptions;
+  czState = {
+    bread: opts.breadOptions && opts.breadOptions[0] ? opts.breadOptions[0].id : null,
+    toast: opts.toastOptions && opts.toastOptions[0] ? opts.toastOptions[0].id : null,
+    veggies: {}, sauces: {}, extras: {}
+  };
+  (opts.veggieOptions || []).forEach(v => { czState.veggies[v.id] = true; });
+  (opts.sauceOptions || []).forEach(s => { czState.sauces[s.id] = { on: false, level: "normal" }; });
+  (opts.extraOptions || []).forEach(e => { czState.extras[e.id] = false; });
+
+  document.getElementById("customizeTitle").textContent = `🥪 ${item.name[lang]}`;
+  renderCustomizeBody();
+  updateCustomizeFooter();
+  document.getElementById("customizeModal").classList.add("open");
+}
+
+function closeCustomizer(){
+  document.getElementById("customizeModal").classList.remove("open");
+}
+
+function renderCustomizeBody(){
+  const opts = activeOptions;
+  const body = document.getElementById("customizeBody");
+  let html = "";
+
+  if (opts.breadOptions && opts.breadOptions.length){
+    html += `<div class="cz-group"><div class="cz-group-title">${t("czBread")}</div><div class="cz-options" id="czBreadOptions"></div></div>`;
   }
-  if (qty > 0){
-    slot.innerHTML = `
-      <div class="qty-row">
-        <button data-action="dec">−</button>
-        <span>${qty}</span>
-        <button data-action="inc">+</button>
-      </div>`;
-    slot.querySelector('[data-action="dec"]').onclick = () => changeQty(item.id, -1);
-    slot.querySelector('[data-action="inc"]').onclick = () => changeQty(item.id, 1);
-  } else {
-    slot.innerHTML = `<button class="add-btn">+ ${t("addToCart")}</button>`;
-    slot.querySelector(".add-btn").onclick = () => { changeQty(item.id, 1); showToast(t("itemAdded")); };
+  if (opts.toastOptions && opts.toastOptions.length){
+    html += `<div class="cz-group"><div class="cz-group-title">${t("czToast")}</div><div class="cz-options" id="czToastOptions"></div></div>`;
+  }
+  if (opts.veggieOptions && opts.veggieOptions.length){
+    html += `<div class="cz-group"><div class="cz-group-title">${t("czVeggies")}</div><div class="cz-options" id="czVeggieOptions"></div></div>`;
+  }
+  if (opts.sauceOptions && opts.sauceOptions.length){
+    html += `<div class="cz-group"><div class="cz-group-title">${t("czSauces")}</div><div class="cz-options" id="czSauceOptions"></div></div>`;
+  }
+  if (opts.extraOptions && opts.extraOptions.length){
+    html += `<div class="cz-group"><div class="cz-group-title">${t("czExtras")}</div><div class="cz-options" id="czExtraOptions"></div></div>`;
+  }
+  body.innerHTML = html;
+
+  // Bread (radio)
+  if (opts.breadOptions){
+    const host = document.getElementById("czBreadOptions");
+    opts.breadOptions.forEach(b=>{
+      const row = document.createElement("label");
+      row.className = "cz-radio" + (czState.bread === b.id ? " selected" : "");
+      row.innerHTML = `<input type="radio" name="czBread" ${czState.bread===b.id?"checked":""}> <span class="cz-radio-label">${b.name ? b.name[lang] : (lang==='ar'?b.nameAr:b.nameEn)}</span>`;
+      row.querySelector("input").onchange = () => { czState.bread = b.id; renderCustomizeBody(); updateCustomizeFooter(); };
+      host.appendChild(row);
+    });
+  }
+  // Toast (radio)
+  if (opts.toastOptions){
+    const host = document.getElementById("czToastOptions");
+    opts.toastOptions.forEach(o=>{
+      const row = document.createElement("label");
+      row.className = "cz-radio" + (czState.toast === o.id ? " selected" : "");
+      row.innerHTML = `<input type="radio" name="czToast" ${czState.toast===o.id?"checked":""}> <span class="cz-radio-label">${lang==='ar'?o.nameAr:o.nameEn}</span>`;
+      row.querySelector("input").onchange = () => { czState.toast = o.id; renderCustomizeBody(); updateCustomizeFooter(); };
+      host.appendChild(row);
+    });
+  }
+  // Veggies (checkbox, default checked)
+  if (opts.veggieOptions){
+    const host = document.getElementById("czVeggieOptions");
+    opts.veggieOptions.forEach(v=>{
+      const checked = czState.veggies[v.id];
+      const row = document.createElement("label");
+      row.className = "cz-check" + (checked ? " selected" : "");
+      row.innerHTML = `<input type="checkbox" ${checked?"checked":""}> <span class="cz-check-label">${lang==='ar'?v.nameAr:v.nameEn}</span>`;
+      row.querySelector("input").onchange = (e) => { czState.veggies[v.id] = e.target.checked; renderCustomizeBody(); updateCustomizeFooter(); };
+      host.appendChild(row);
+    });
+  }
+  // Sauces (checkbox + level)
+  if (opts.sauceOptions){
+    const host = document.getElementById("czSauceOptions");
+    opts.sauceOptions.forEach(s=>{
+      const state = czState.sauces[s.id] || { on:false, level:"normal" };
+      const row = document.createElement("div");
+      row.className = "cz-sauce-row";
+      row.innerHTML = `
+        <label class="cz-sauce-top">
+          <input type="checkbox" ${state.on?"checked":""}>
+          <span class="cz-sauce-name">${lang==='ar'?s.nameAr:s.nameEn}</span>
+        </label>
+        ${state.on ? `
+        <div class="cz-sauce-levels">
+          <button type="button" class="cz-level-btn ${state.level==='normal'?'active':''}" data-level="normal">${t("czNormal")}</button>
+          <button type="button" class="cz-level-btn ${state.level==='extra'?'active':''}" data-level="extra">${t("czExtra")}</button>
+          <button type="button" class="cz-level-btn ${state.level==='onSide'?'active':''}" data-level="onSide">${t("czOnSide")}</button>
+        </div>` : ""}
+      `;
+      row.querySelector('input[type="checkbox"]').onchange = (e) => {
+        czState.sauces[s.id] = { on: e.target.checked, level: state.level || "normal" };
+        renderCustomizeBody(); updateCustomizeFooter();
+      };
+      row.querySelectorAll(".cz-level-btn").forEach(btn=>{
+        btn.onclick = () => { czState.sauces[s.id] = { on:true, level: btn.dataset.level }; renderCustomizeBody(); updateCustomizeFooter(); };
+      });
+      host.appendChild(row);
+    });
+  }
+  // Extras (checkbox with price)
+  if (opts.extraOptions){
+    const host = document.getElementById("czExtraOptions");
+    opts.extraOptions.forEach(x=>{
+      const checked = czState.extras[x.id];
+      const row = document.createElement("label");
+      row.className = "cz-check" + (checked ? " selected" : "");
+      row.innerHTML = `<input type="checkbox" ${checked?"checked":""}> <span class="cz-check-label">${lang==='ar'?x.nameAr:x.nameEn}</span> <span class="cz-check-price">+${fmtPrice(x.price)}</span>`;
+      row.querySelector("input").onchange = (e) => { czState.extras[x.id] = e.target.checked; updateCustomizeFooter(); };
+      host.appendChild(row);
+    });
   }
 }
 
-function changeQty(id, delta){
-  const current = cart[id] || 0;
-  const next = Math.max(0, current + delta);
-  if (next === 0) delete cart[id];
-  else cart[id] = next;
+function czUnitPrice(){
+  const opts = activeOptions;
+  let price = czItem.price;
+  (opts.extraOptions || []).forEach(x=>{
+    if (czState.extras[x.id]) price += (x.price || 0);
+  });
+  return price;
+}
+
+function czBuildSummary(){
+  const opts = activeOptions;
+  const parts = { ar: [], en: [] };
+
+  const bread = (opts.breadOptions || []).find(b => b.id === czState.bread);
+  if (bread){ parts.ar.push(bread.nameAr); parts.en.push(bread.nameEn); }
+
+  const toast = (opts.toastOptions || []).find(o => o.id === czState.toast);
+  if (toast && toast.id !== (opts.toastOptions[0] && opts.toastOptions[0].id)){
+    parts.ar.push(toast.nameAr); parts.en.push(toast.nameEn);
+  }
+
+  const removedVeggies = (opts.veggieOptions || []).filter(v => czState.veggies[v.id] === false);
+  if (removedVeggies.length){
+    parts.ar.push(`بدون ${removedVeggies.map(v=>v.nameAr).join("، ")}`);
+    parts.en.push(`Without ${removedVeggies.map(v=>v.nameEn).join(", ")}`);
+  }
+
+  (opts.sauceOptions || []).forEach(s=>{
+    const state = czState.sauces[s.id];
+    if (state && state.on){
+      if (state.level === "extra"){ parts.ar.push(`${s.nameAr} زيادة`); parts.en.push(`Extra ${s.nameEn}`); }
+      else if (state.level === "onSide"){ parts.ar.push(`${s.nameAr} على جنب`); parts.en.push(`${s.nameEn} on the side`); }
+      else { parts.ar.push(s.nameAr); parts.en.push(s.nameEn); }
+    }
+  });
+
+  (opts.extraOptions || []).forEach(x=>{
+    if (czState.extras[x.id]){ parts.ar.push(`+${x.nameAr}`); parts.en.push(`+${x.nameEn}`); }
+  });
+
+  return {
+    ar: parts.ar.length ? ` (${parts.ar.join("، ")})` : "",
+    en: parts.en.length ? ` (${parts.en.join(", ")})` : ""
+  };
+}
+
+function updateCustomizeFooter(){
+  document.getElementById("customizeQtyVal").textContent = czQty;
+  const unit = czUnitPrice();
+  document.getElementById("customizeTotalPrice").textContent = fmtPrice(unit * czQty);
+}
+
+function addCustomizedToCart(){
+  const unitPrice = czUnitPrice();
+  const summary = czBuildSummary();
+  const nameAr = czItem.name.ar + summary.ar;
+  const nameEn = czItem.name.en + summary.en;
+
+  const signature = JSON.stringify({ id: czItem.id, s: czState });
+  const existing = cart.find(l => l.signature === signature);
+  if (existing){
+    existing.qty += czQty;
+  } else {
+    cart.push({
+      lineId: "l" + Date.now() + Math.random().toString(36).slice(2,7),
+      itemId: czItem.id,
+      signature,
+      qty: czQty,
+      unitPrice,
+      nameAr, nameEn,
+      choices: JSON.parse(JSON.stringify(czState))
+    });
+  }
   saveCart();
-  renderMenu();
   renderCart();
+  closeCustomizer();
+  showToast(t("itemAdded"));
 }
 
 /* ---------------- Cart Drawer ---------------- */
@@ -227,37 +425,43 @@ function renderCart(){
   }
 
   const body = document.getElementById("drawerBody");
-  const entries = Object.entries(cart);
-  if (entries.length === 0){
+  if (cart.length === 0){
     body.innerHTML = `<div class="empty-state">${t("cartEmpty")}</div>`;
   } else {
     body.innerHTML = "";
-    entries.forEach(([id, qty])=>{
-      const item = findItem(id);
-      if (!item) return;
-      const line = document.createElement("div");
-      line.className = "cart-line";
-      line.innerHTML = `
+    cart.forEach(line=>{
+      const el = document.createElement("div");
+      el.className = "cart-line";
+      el.innerHTML = `
         <div class="cart-line-info">
-          <div class="cart-line-name">${item.name[lang]}</div>
-          <div class="cart-line-price">${fmtPrice(item.price)}</div>
+          <div class="cart-line-name">${lang==='ar' ? line.nameAr : line.nameEn}</div>
+          <div class="cart-line-price">${fmtPrice(line.unitPrice)}</div>
           <div class="remove-line">${t("remove")}</div>
         </div>
         <div class="qty-row">
           <button data-action="dec">−</button>
-          <span>${qty}</span>
+          <span>${line.qty}</span>
           <button data-action="inc">+</button>
         </div>
       `;
-      line.querySelector(".remove-line").onclick = () => { delete cart[id]; saveCart(); renderMenu(); renderCart(); };
-      line.querySelector('[data-action="dec"]').onclick = () => changeQty(id, -1);
-      line.querySelector('[data-action="inc"]').onclick = () => changeQty(id, 1);
-      body.appendChild(line);
+      el.querySelector(".remove-line").onclick = () => { cart = cart.filter(l => l.lineId !== line.lineId); saveCart(); renderCart(); };
+      el.querySelector('[data-action="dec"]').onclick = () => changeLineQty(line.lineId, -1);
+      el.querySelector('[data-action="inc"]').onclick = () => changeLineQty(line.lineId, 1);
+      body.appendChild(el);
     });
   }
 
   document.getElementById("drawerTotal").textContent = fmtPrice(cartTotal());
-  document.getElementById("checkoutBtn").disabled = entries.length === 0;
+  document.getElementById("checkoutBtn").disabled = cart.length === 0;
+}
+
+function changeLineQty(lineId, delta){
+  const line = cart.find(l => l.lineId === lineId);
+  if (!line) return;
+  line.qty = Math.max(0, line.qty + delta);
+  if (line.qty === 0) cart = cart.filter(l => l.lineId !== lineId);
+  saveCart();
+  renderCart();
 }
 
 function openDrawer(){
@@ -339,10 +543,15 @@ function genOrderRef(){
 async function submitOrder(){
   if (!validateCheckoutForm()) return;
 
-  const items = Object.entries(cart).map(([id, qty])=>{
-    const it = findItem(id);
-    return { id, name: it.name[lang], nameAr: it.name.ar, nameEn: it.name.en, price: it.price, qty };
-  });
+  const items = cart.map(line => ({
+    id: line.itemId,
+    name: lang === "ar" ? line.nameAr : line.nameEn,
+    nameAr: line.nameAr,
+    nameEn: line.nameEn,
+    price: line.unitPrice,
+    qty: line.qty,
+    choices: line.choices
+  }));
 
   const order = {
     ref: genOrderRef(),
@@ -374,9 +583,8 @@ async function submitOrder(){
   document.getElementById("confirmModal").classList.add("open");
   document.getElementById("waLinkBtn").href = waLink;
 
-  cart = {};
+  cart = [];
   saveCart();
-  renderMenu();
   renderCart();
 
   // Auto-open WhatsApp shortly after showing confirmation
@@ -398,6 +606,8 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=> el.classList.remove("show"), 2000);
 }
+
+/* ---------------- Live Menu ---------------- */
 
 let liveMenuCats = null;
 let liveMenuItems = null;
@@ -450,6 +660,21 @@ function loadLiveMenu(){
   }, ()=>{});
 }
 
+/* ---------------- Live Customization Options ---------------- */
+
+function loadLiveOptions(){
+  if (!window.__firestore){
+    window.addEventListener("firebase-ready", loadLiveOptions, { once:true });
+    return;
+  }
+  const { db, doc, onSnapshot } = window.__firestore;
+  onSnapshot(doc(db, "customization_config", "global"), (snap)=>{
+    if (snap.exists()){
+      activeOptions = snap.data();
+    }
+  }, ()=>{ /* keep static fallback on error */ });
+}
+
 /* ---------------- Init ---------------- */
 
 function toggleLang(){
@@ -469,12 +694,18 @@ function init(){
   document.getElementById("checkoutForm").addEventListener("submit", (e)=>{ e.preventDefault(); submitOrder(); });
   document.getElementById("closeConfirmBtn").onclick = closeConfirm;
 
+  document.getElementById("closeCustomizeBtn").onclick = closeCustomizer;
+  document.getElementById("customizeAddBtn").onclick = addCustomizedToCart;
+  document.getElementById("customizeQtyDec").onclick = () => { if (czQty > 1){ czQty--; updateCustomizeFooter(); } };
+  document.getElementById("customizeQtyInc").onclick = () => { czQty++; updateCustomizeFooter(); };
+
   document.getElementById("custPhone").addEventListener("input", function(){
     this.closest(".field").querySelector(".field-error").textContent = t("fieldRequired");
   });
 
   applyLanguage();
   loadLiveMenu();
+  loadLiveOptions();
 
   if ("serviceWorker" in navigator){
     navigator.serviceWorker.register("service-worker.js").catch(()=>{});
