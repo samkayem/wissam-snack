@@ -120,6 +120,45 @@ const MENU_CATEGORIES = [
   }
 ];
 
+// Default customization options (seeded into Firestore once from the admin
+// panel's "⚙️ خيارات التخصيص" tab — editable there afterwards).
+// Extra prices are in the same "thousands LBP" convention as MENU_CATEGORIES.
+const CUSTOMIZATION_DEFAULTS = {
+  breadOptions: [
+    { id: "markouk", nameAr: "خبز مرقوق / صاج", nameEn: "Markouk / Saj bread" },
+    { id: "arabic-small", nameAr: "خبز لبناني / عربي صغير", nameEn: "Small Arabic bread" },
+    { id: "arabic-large", nameAr: "خبز لبناني / عربي كبير", nameEn: "Large Arabic bread" },
+    { id: "baguette", nameAr: "خبز فرنجي / باجيت", nameEn: "Baguette" }
+  ],
+  toastOptions: [
+    { id: "regular", nameAr: "عادي", nameEn: "Regular" },
+    { id: "toasted", nameAr: "محمّص / مكبوس", nameEn: "Toasted / Pressed" }
+  ],
+  veggieOptions: [
+    { id: "pickles", nameAr: "مخلل خيار ولفت", nameEn: "Pickles" },
+    { id: "tomato", nameAr: "بندورة", nameEn: "Tomato" },
+    { id: "lettuce", nameAr: "خس", nameEn: "Lettuce" },
+    { id: "mint", nameAr: "نعنع", nameEn: "Mint" },
+    { id: "onion", nameAr: "بصل", nameEn: "Onion" },
+    { id: "parsley", nameAr: "بقدونس", nameEn: "Parsley" }
+  ],
+  sauceOptions: [
+    { id: "garlic", nameAr: "ثوم كريمي", nameEn: "Garlic cream" },
+    { id: "tahini", nameAr: "طحينة", nameEn: "Tahini" },
+    { id: "pomegranate", nameAr: "دبس رمان", nameEn: "Pomegranate molasses" },
+    { id: "mayo", nameAr: "مايونيز", nameEn: "Mayo" },
+    { id: "mustard", nameAr: "خردل", nameEn: "Mustard" },
+    { id: "hot", nameAr: "حر / شطة حارة", nameEn: "Hot sauce" }
+  ],
+  extraOptions: [
+    { id: "cheese-kashkaval", nameAr: "جبنة قشقوان إكسترا", nameEn: "Extra kashkaval cheese", price: 50 },
+    { id: "cheese-halloum", nameAr: "جبنة حلوم إكسترا", nameEn: "Extra halloum cheese", price: 60 },
+    { id: "cheese-mozzarella", nameAr: "جبنة موزاريلا إكسترا", nameEn: "Extra mozzarella cheese", price: 50 },
+    { id: "fries-inside", nameAr: "بطاطا مقلية داخل الساندويش", nameEn: "Fries inside the sandwich", price: 30 },
+    { id: "double-protein", nameAr: "لحمة أو دجاج مضاعف", nameEn: "Double meat or chicken", price: 150 }
+  ]
+};
+
 // Business info
 const BUSINESS_INFO = {
   name: { ar: "وسام سناك", en: "Wissam Snack" },
