@@ -25,7 +25,7 @@
   .login-box button{width:100%; background:#f4b400; color:#1a1204; border:none; border-radius:10px; padding:12px; font-weight:800; cursor:pointer; font-family:inherit; font-size:0.95rem;}
   .login-error{color:#e85d2c; font-size:0.8rem; margin-top:8px; display:none;}
 
-  header{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #35301f; position:sticky; top:0; background:#0e0c09; z-index:10;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #35301f; position:sticky; top:0; background:#0e0c09; z-index:10; flex-wrap:wrap; gap:10px;}
   header h1{font-size:1.3rem; color:#ffd966;}
   header .clock{font-size:1.1rem; font-weight:800; color:#f4b400;}
   header button{background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:8px 14px; font-family:inherit; cursor:pointer;}
@@ -76,6 +76,7 @@
     <input type="password" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric">
     <button id="loginBtn">دخول</button>
     <div class="login-error" id="loginError">الرمز غير صحيح</div>
+    <a href="admin.html" style="display:block; margin-top:16px; color:#a8977a; font-size:0.82rem; text-decoration:none;">🧾 الرجوع للوحة الإدارة</a>
   </div>
 </div>
 
@@ -83,7 +84,10 @@
   <header>
     <h1>🍳 مطبخ وسام سناك</h1>
     <div class="clock" id="clock"></div>
-    <button onclick="logout()">خروج</button>
+    <div style="display:flex; gap:8px;">
+      <a href="admin.html" style="background:#262015; border:1px solid #35301f; color:#f7f1e1; border-radius:8px; padding:8px 14px; font-family:inherit; text-decoration:none; display:flex; align-items:center;">🧾 لوحة الإدارة</a>
+      <button onclick="logout()">خروج</button>
+    </div>
   </header>
   <div class="board">
     <div class="lane">
