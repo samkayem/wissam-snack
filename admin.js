@@ -52,11 +52,14 @@ function initMainTabs(){
     btn.onclick = () => {
       document.querySelectorAll("#mainTabs button").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
-      const isMenu = btn.dataset.tab === "menu";
-      document.getElementById("ordersTab").style.display = isMenu ? "none" : "block";
-      document.getElementById("menuTab").style.display = isMenu ? "block" : "none";
-      document.getElementById("pageTitle").textContent = isMenu ? "🍔 مينيو وسام سناك" : "🧾 طلبات وسام سناك";
-      if (isMenu) startMenuListening();
+      const tab = btn.dataset.tab;
+      document.getElementById("ordersTab").style.display = tab === "orders" ? "block" : "none";
+      document.getElementById("menuTab").style.display = tab === "menu" ? "block" : "none";
+      document.getElementById("optionsTab").style.display = tab === "options" ? "block" : "none";
+      const titles = { orders: "🧾 طلبات وسام سناك", menu: "🍔 مينيو وسام سناك", options: "⚙️ خيارات التخصيص" };
+      document.getElementById("pageTitle").textContent = titles[tab];
+      if (tab === "menu") startMenuListening();
+      if (tab === "options") startOptionsListening();
     };
   });
 }
@@ -458,6 +461,147 @@ function setupForegroundMessaging(){
   });
 }
 
+
+// ============================================================
+// Customization options management (Firestore-backed)
+// ============================================================
+
+let liveOptions = null; // { breadOptions, toastOptions, veggieOptions, sauceOptions, extraOptions }
+let optionsListenerStarted = false;
+
+const OPTION_GROUPS = [
+  { key: "breadOptions", title: "🍞 أنواع الخبز", hasPrice: false },
+  { key: "toastOptions", title: "🔥 التحميص / الكبس", hasPrice: false },
+  { key: "veggieOptions", title: "🥬 الخضار والإضافات الأساسية", hasPrice: false },
+  { key: "sauceOptions", title: "🌶️ الصلصات", hasPrice: false },
+  { key: "extraOptions", title: "➕ إضافات مدفوعة", hasPrice: true }
+];
+
+function startOptionsListening(){
+  if (optionsListenerStarted) return;
+  if (!window.__firestore){
+    window.addEventListener("firebase-ready", startOptionsListening, { once:true });
+    return;
+  }
+  optionsListenerStarted = true;
+  const { db, doc, onSnapshot } = window.__firestore;
+  onSnapshot(doc(db, "customization_config", "global"), (snap)=>{
+    liveOptions = snap.exists() ? snap.data() : null;
+    renderOptionsTab();
+  }, (err)=>{
+    document.getElementById("optionsGroups").innerHTML = `<div class="empty">تعذر تحميل الخيارات: ${err.message}</div>`;
+  });
+}
+
+function renderOptionsTab(){
+  const seedBox = document.getElementById("optionsSeedBox");
+  const wrap = document.getElementById("optionsGroups");
+
+  if (!liveOptions){
+    seedBox.innerHTML = `
+      <div class="seed-box">
+        <div style="font-size:1.8rem;">⚙️</div>
+        <p style="margin:8px 0;">ما في خيارات تخصيص محفوظة بقاعدة البيانات بعد.</p>
+        <button class="primary-wide" id="seedOptionsBtn" style="width:auto; padding:11px 24px;">استيراد الخيارات الافتراضية (مرة واحدة)</button>
+      </div>`;
+    document.getElementById("seedOptionsBtn").onclick = seedOptionsFromDefaults;
+    wrap.innerHTML = "";
+    return;
+  }
+  seedBox.innerHTML = "";
+
+  wrap.innerHTML = "";
+  OPTION_GROUPS.forEach(group=>{
+    const items = liveOptions[group.key] || [];
+    const card = document.createElement("div");
+    card.className = "cat-card";
+    card.innerHTML = `
+      <div class="cat-head">
+        <span class="cat-name">${group.title}</span>
+        <div class="cat-actions">
+          <button class="icon-btn" data-act="add">+ خيار جديد</button>
+        </div>
+      </div>
+      <div class="items-host"></div>
+    `;
+    const host = card.querySelector(".items-host");
+    items.forEach((opt, idx) => host.appendChild(renderOptionRow(group, opt, idx)));
+    card.querySelector('[data-act="add"]').onclick = () => host.appendChild(renderOptionRow(group, null, items.length));
+    wrap.appendChild(card);
+  });
+}
+
+function renderOptionRow(group, opt, index){
+  const isNew = !opt;
+  const row = document.createElement("div");
+  row.className = "item-row";
+  row.innerHTML = `
+    <input type="text" class="f-name" placeholder="الاسم بالعربي" value="${opt ? (opt.nameAr||"") : ""}" data-f="nameAr">
+    <input type="text" class="f-name" placeholder="Name in English" value="${opt ? (opt.nameEn||"") : ""}" data-f="nameEn">
+    ${group.hasPrice ? `<input type="number" class="f-price" placeholder="السعر" value="${opt && opt.price != null ? opt.price : ""}" data-f="price">` : ""}
+    <div class="row-actions">
+      <button class="icon-btn" data-act="save">💾 حفظ</button>
+      ${isNew ? "" : `<button class="icon-btn danger" data-act="delete">🗑</button>`}
+    </div>
+  `;
+  row.querySelector('[data-act="save"]').onclick = () => saveOptionRow(group, row, isNew ? null : index);
+  if (!isNew){
+    row.querySelector('[data-act="delete"]').onclick = () => deleteOption(group, index);
+  }
+  return row;
+}
+
+async function saveOptionRow(group, row, index){
+  const nameAr = row.querySelector('[data-f="nameAr"]').value.trim();
+  const nameEn = row.querySelector('[data-f="nameEn"]').value.trim();
+  const priceInput = row.querySelector('[data-f="price"]');
+  const price = priceInput ? Number(priceInput.value || 0) : undefined;
+
+  if (!nameAr || !nameEn){
+    alert("لازم تعبّي الاسم بالعربي والإنجليزي");
+    return;
+  }
+
+  const list = (liveOptions[group.key] || []).slice();
+  const idBase = nameEn.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || ("opt-" + Date.now());
+  const newOpt = group.hasPrice ? { id: idBase, nameAr, nameEn, price: price || 0 } : { id: idBase, nameAr, nameEn };
+
+  if (index === null){
+    list.push(newOpt);
+  } else {
+    list[index] = { ...list[index], nameAr, nameEn, ...(group.hasPrice ? { price: price || 0 } : {}) };
+  }
+  await saveOptionsGroup(group.key, list);
+}
+
+async function deleteOption(group, index){
+  if (!confirm("حذف هذا الخيار؟")) return;
+  const list = (liveOptions[group.key] || []).slice();
+  list.splice(index, 1);
+  await saveOptionsGroup(group.key, list);
+}
+
+async function saveOptionsGroup(key, list){
+  const { db, doc, setDoc } = window.__firestore;
+  try {
+    await setDoc(doc(db, "customization_config", "global"), { ...liveOptions, [key]: list });
+  } catch (e) {
+    alert("تعذر الحفظ: " + e.message);
+  }
+}
+
+async function seedOptionsFromDefaults(){
+  if (typeof CUSTOMIZATION_DEFAULTS === "undefined"){
+    alert("ملف menu-data.js غير محمّل");
+    return;
+  }
+  const { db, doc, setDoc } = window.__firestore;
+  try {
+    await setDoc(doc(db, "customization_config", "global"), CUSTOMIZATION_DEFAULTS);
+  } catch (e) {
+    alert("تعذر الاستيراد: " + e.message);
+  }
+}
 
 document.addEventListener("DOMContentLoaded", ()=>{
   document.getElementById("loginBtn").onclick = tryLogin;
