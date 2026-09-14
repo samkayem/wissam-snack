@@ -78,6 +78,25 @@
   </div>
 </aside>
 
+<!-- Item customizer modal -->
+<div class="modal-overlay" id="customizeModal">
+  <div class="modal">
+    <h2 id="customizeTitle">🥪</h2>
+    <div id="customizeBody"></div>
+    <div class="customize-footer">
+      <div class="qty-row" id="customizeQtyRow">
+        <button id="customizeQtyDec">−</button>
+        <span id="customizeQtyVal">1</span>
+        <button id="customizeQtyInc">+</button>
+      </div>
+      <button class="primary-btn" id="customizeAddBtn" style="flex:1;">
+        <span data-i18n="addToCart">أضف للسلة</span> — <span id="customizeTotalPrice">0</span>
+      </button>
+    </div>
+    <button class="secondary-btn" id="closeCustomizeBtn" data-i18n="continueShopping">أكمل التسوق</button>
+  </div>
+</div>
+
 <!-- Checkout modal -->
 <div class="modal-overlay" id="checkoutModal">
   <div class="modal">
