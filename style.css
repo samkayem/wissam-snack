@@ -236,6 +236,38 @@ html[dir="rtl"] .drawer.open{transform: translateX(0);}
 .pay-option .pt-title{font-weight:800; font-size:0.9rem;}
 .pay-option .pt-desc{font-size:0.78rem; color:var(--muted); margin-top:2px;}
 
+/* ---------- Item Customizer ---------- */
+.cz-group{margin-bottom:18px;}
+.cz-group-title{font-weight:800; font-size:0.9rem; color:var(--gold-light); margin-bottom:10px; display:flex; align-items:center; gap:6px;}
+.cz-options{display:flex; flex-direction:column; gap:8px;}
+
+.cz-radio, .cz-check{
+  display:flex; align-items:center; gap:10px; background: var(--surface-2);
+  border:1px solid var(--line); border-radius: var(--radius-sm); padding:11px 12px;
+  cursor:pointer; transition: border-color .15s ease, background .15s ease;
+}
+.cz-radio.selected, .cz-check.selected{border-color:var(--gold); background: rgba(244,180,0,0.08);}
+.cz-radio input, .cz-check input{accent-color: var(--gold); width:18px; height:18px; flex-shrink:0;}
+.cz-radio-label, .cz-check-label{flex:1; font-size:0.88rem; font-weight:600;}
+.cz-check-price{font-size:0.8rem; color:var(--gold-light); font-weight:800;}
+
+.cz-sauce-row{
+  background: var(--surface-2); border:1px solid var(--line); border-radius: var(--radius-sm);
+  padding:11px 12px;
+}
+.cz-sauce-top{display:flex; align-items:center; gap:10px; cursor:pointer;}
+.cz-sauce-top input{accent-color: var(--gold); width:18px; height:18px; flex-shrink:0;}
+.cz-sauce-name{flex:1; font-size:0.88rem; font-weight:600;}
+.cz-sauce-levels{display:flex; gap:6px; margin-top:10px; padding-inline-start:28px;}
+.cz-level-btn{
+  flex:1; background: var(--bg); border:1px solid var(--line); color:var(--muted);
+  border-radius:8px; padding:7px 4px; font-size:0.74rem; font-weight:700;
+}
+.cz-level-btn.active{background: var(--gold); color:#1a1204; border-color:var(--gold);}
+
+.customize-footer{display:flex; align-items:center; gap:10px; margin-top:8px; padding-top:14px; border-top:1px solid var(--line);}
+.customize-footer .qty-row{width:110px; flex-shrink:0;}
+
 /* ---------- Modal (checkout) ---------- */
 .modal-overlay{
   position:fixed; inset:0; background: rgba(0,0,0,0.65); z-index:80; display:none;
