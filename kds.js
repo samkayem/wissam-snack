@@ -38,7 +38,7 @@ function showBoard(){
 
 function startClock(){
   const el = document.getElementById("clock");
-  const tick = () => { el.textContent = new Date().toLocaleTimeString("ar-LB", { hour: "2-digit", minute: "2-digit" }); };
+  const tick = () => { el.textContent = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   tick();
   setInterval(tick, 15000);
 }
