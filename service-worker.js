@@ -46,7 +46,7 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-const CACHE_NAME = "wissam-snack-v10";
+const CACHE_NAME = "wissam-snack-v11";
 const ASSETS = [
   "./index.html",
   "./style.css",
