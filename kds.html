@@ -32,14 +32,22 @@
 
   .board{display:flex; gap:16px; padding:16px; overflow-x:auto; align-items:flex-start;}
   .lane{flex:1 1 320px; min-width:300px; max-width:420px;}
-  .lane-head{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:12px 12px 0 0; font-weight:900; font-size:1.05rem;}
+  .lane-head{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-radius:12px 12px 0 0; font-weight:900; font-size:1.05rem; position:sticky; top:0; z-index:5;}
   .lane-head.new{background:#e85d2c; color:#fff;}
   .lane-head.preparing{background:#f4b400; color:#1a1204;}
   .lane-head.delivering{background:#3fae5a; color:#0e0c09;}
   .lane-count{background:rgba(0,0,0,0.25); border-radius:999px; padding:2px 10px; font-size:0.9rem;}
-  .lane-body{background:#161209; border:1px solid #35301f; border-top:none; border-radius:0 0 12px 12px; min-height:200px; padding:10px; display:flex; flex-direction:column; gap:12px;}
+  .lane-body{background:#161209; border:1px solid #35301f; border-top:none; border-radius:0 0 12px 12px; min-height:120px; padding:12px; display:flex; flex-direction:column; gap:12px;}
 
-  .order-card{background:#1b170f; border:1px solid #35301f; border-radius:14px; padding:14px;}
+  /* Phones / narrow screens: stack lanes full-width instead of a cramped side-scroll */
+  @media (max-width: 860px){
+    .board{flex-direction:column; overflow-x:hidden; padding:12px; gap:20px;}
+    .lane{flex:1 1 auto; min-width:0; max-width:100%; width:100%;}
+    header{padding:12px 14px;}
+    header h1{font-size:1.1rem;}
+  }
+
+  .order-card{background:#1b170f; border:1px solid #35301f; border-radius:14px; padding:14px; box-shadow:0 4px 14px rgba(0,0,0,0.35);}
   .order-card.urgent{border-color:#e85d2c; box-shadow:0 0 0 1px #e85d2c;}
   .oc-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
   .oc-ref{font-weight:900; font-size:1.05rem; color:#ffd966;}
