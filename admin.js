@@ -276,11 +276,43 @@ function renderMenuTab(){
   });
 }
 
+function compressImageFile(file, maxWidth, quality){
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")){
+      reject(new Error("لازم تختار ملف صورة"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("تعذرت قراءة الملف"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("تعذر فتح الصورة"));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function renderItemRow(item, newForCategoryId){
   const isNew = !item;
+  let rowImage = item && item.image ? item.image : null;
   const row = document.createElement("div");
   row.className = "item-row";
   row.innerHTML = `
+    <div class="f-image">
+      <img class="f-image-preview" src="${rowImage || ""}" style="display:${rowImage ? "block" : "none"};">
+      <div class="f-image-placeholder" style="display:${rowImage ? "none" : "flex"};">📷</div>
+      <input type="file" accept="image/*" class="f-image-input" style="display:none;">
+    </div>
     <input type="text" class="f-name" placeholder="الاسم بالعربي" value="${item ? (item.nameAr||"") : ""}" data-f="nameAr">
     <input type="text" class="f-name" placeholder="Name in English" value="${item ? (item.nameEn||"") : ""}" data-f="nameEn">
     <input type="number" class="f-price" placeholder="السعر" value="${item && item.price != null ? item.price : ""}" data-f="price">
@@ -291,18 +323,58 @@ function renderItemRow(item, newForCategoryId){
     </select>
     <label class="avail"><input type="checkbox" data-f="available" ${!item || item.available !== false ? "checked" : ""}> متوفر</label>
     <div class="row-actions">
+      <button class="icon-btn" data-act="removeImage" ${rowImage ? "" : "style=display:none;"}>🗑 الصورة</button>
       <button class="icon-btn" data-act="save">💾 حفظ</button>
       ${isNew ? "" : `<button class="icon-btn danger" data-act="delete">🗑</button>`}
     </div>
   `;
-  row.querySelector('[data-act="save"]').onclick = () => saveItemRow(row, item, newForCategoryId);
+
+  const imgBox = row.querySelector(".f-image");
+  const imgPreview = row.querySelector(".f-image-preview");
+  const imgPlaceholder = row.querySelector(".f-image-placeholder");
+  const imgInput = row.querySelector(".f-image-input");
+  const removeImgBtn = row.querySelector('[data-act="removeImage"]');
+
+  imgBox.onclick = () => imgInput.click();
+  imgInput.onchange = async () => {
+    const file = imgInput.files[0];
+    if (!file) return;
+    imgPlaceholder.textContent = "⏳";
+    try {
+      const compressed = await compressImageFile(file, 600, 0.7);
+      if (compressed.length > 700000){
+        alert("الصورة لسا كبيرة بعد الضغط، جرب صورة أبسط أو أصغر.");
+        imgPlaceholder.textContent = "📷";
+        return;
+      }
+      rowImage = compressed;
+      imgPreview.src = rowImage;
+      imgPreview.style.display = "block";
+      imgPlaceholder.style.display = "none";
+      removeImgBtn.style.display = "";
+    } catch (e) {
+      alert("تعذرت معالجة الصورة: " + e.message);
+      imgPlaceholder.textContent = "📷";
+    }
+  };
+  removeImgBtn.onclick = (e) => {
+    e.stopPropagation();
+    rowImage = null;
+    imgPreview.src = "";
+    imgPreview.style.display = "none";
+    imgPlaceholder.style.display = "flex";
+    imgPlaceholder.textContent = "📷";
+    removeImgBtn.style.display = "none";
+  };
+
+  row.querySelector('[data-act="save"]').onclick = () => saveItemRow(row, item, newForCategoryId, () => rowImage);
   if (!isNew){
     row.querySelector('[data-act="delete"]').onclick = () => deleteItem(item);
   }
   return row;
 }
 
-async function saveItemRow(row, existingItem, newForCategoryId){
+async function saveItemRow(row, existingItem, newForCategoryId, getImage){
   const { db, doc, setDoc, addDoc, collection } = window.__firestore;
   const nameAr = row.querySelector('[data-f="nameAr"]').value.trim();
   const nameEn = row.querySelector('[data-f="nameEn"]').value.trim();
@@ -310,6 +382,7 @@ async function saveItemRow(row, existingItem, newForCategoryId){
   const tag = row.querySelector('[data-f="tag"]').value || null;
   const available = row.querySelector('[data-f="available"]').checked;
   const price = priceRaw === "" ? null : Number(priceRaw);
+  const image = getImage ? getImage() : (existingItem ? existingItem.image : null);
 
   if (!nameAr || !nameEn){
     alert("لازم تعبّي الاسم بالعربي والإنجليزي");
@@ -319,12 +392,12 @@ async function saveItemRow(row, existingItem, newForCategoryId){
   try {
     if (existingItem){
       await setDoc(doc(db, "menu_items", existingItem.id), {
-        ...existingItem, nameAr, nameEn, price, tag, available
+        ...existingItem, nameAr, nameEn, price, tag, available, image: image || null
       });
     } else {
       const order = liveItems.filter(i=>i.categoryId===newForCategoryId).length;
       await addDoc(collection(db, "menu_items"), {
-        categoryId: newForCategoryId, nameAr, nameEn, price, tag, available, order
+        categoryId: newForCategoryId, nameAr, nameEn, price, tag, available, order, image: image || null
       });
     }
   } catch (e) {
@@ -535,20 +608,45 @@ function renderOptionRow(group, opt, index){
   const isNew = !opt;
   const row = document.createElement("div");
   row.className = "item-row";
+  if (isNew){
+    renderOptionRowEditMode(row, group, opt, index, true);
+  } else {
+    renderOptionRowViewMode(row, group, opt, index);
+  }
+  return row;
+}
+
+function renderOptionRowViewMode(row, group, opt, index){
+  row.innerHTML = `
+    <div class="opt-view">
+      <div class="opt-view-name">${opt.nameAr} <span class="opt-view-en">/ ${opt.nameEn}</span></div>
+      ${group.hasPrice ? `<div class="opt-view-price">+${(opt.price||0).toLocaleString("en-US")} ل.ل</div>` : ""}
+    </div>
+    <div class="row-actions">
+      <button class="icon-btn" data-act="edit">✏️ تعديل</button>
+      <button class="icon-btn danger" data-act="delete">🗑</button>
+    </div>
+  `;
+  row.querySelector('[data-act="edit"]').onclick = () => renderOptionRowEditMode(row, group, opt, index, false);
+  row.querySelector('[data-act="delete"]').onclick = () => deleteOption(group, index);
+}
+
+function renderOptionRowEditMode(row, group, opt, index, isNew){
   row.innerHTML = `
     <input type="text" class="f-name" placeholder="الاسم بالعربي" value="${opt ? (opt.nameAr||"") : ""}" data-f="nameAr">
     <input type="text" class="f-name" placeholder="Name in English" value="${opt ? (opt.nameEn||"") : ""}" data-f="nameEn">
     ${group.hasPrice ? `<input type="number" class="f-price" placeholder="السعر" value="${opt && opt.price != null ? opt.price : ""}" data-f="price">` : ""}
     <div class="row-actions">
       <button class="icon-btn" data-act="save">💾 حفظ</button>
-      ${isNew ? "" : `<button class="icon-btn danger" data-act="delete">🗑</button>`}
+      ${isNew ? `<button class="icon-btn danger" data-act="discard">✖️ إلغاء</button>` : `<button class="icon-btn" data-act="cancel">✖️ إلغاء</button>`}
     </div>
   `;
   row.querySelector('[data-act="save"]').onclick = () => saveOptionRow(group, row, isNew ? null : index);
-  if (!isNew){
-    row.querySelector('[data-act="delete"]').onclick = () => deleteOption(group, index);
+  if (isNew){
+    row.querySelector('[data-act="discard"]').onclick = () => row.remove();
+  } else {
+    row.querySelector('[data-act="cancel"]').onclick = () => renderOptionRowViewMode(row, group, opt, index);
   }
-  return row;
 }
 
 async function saveOptionRow(group, row, index){
