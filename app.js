@@ -180,12 +180,14 @@ function renderItemCard(item){
   const card = document.createElement("div");
   card.className = "item-card";
   const tagHtml = item.tag ? `<div class="tag ${item.tag}">${item.tag === "zinger" ? "🔥 ZINGER" : "⭐ " + (lang==="ar"?"الأكثر طلباً":"Popular")}</div>` : "";
+  const imageHtml = item.image ? `<img class="item-image" src="${item.image}" alt="${item.name[lang]}" loading="lazy">` : "";
   const priceHtml = item.price === null
     ? `<div class="item-unavailable">${t("unavailable")}</div>`
     : `<div class="item-price">${fmtPrice(item.price)}</div>`;
 
   card.innerHTML = `
     ${tagHtml}
+    ${imageHtml}
     <div class="item-name">${item.name[lang]}</div>
     ${priceHtml}
     <div class="control-slot"></div>
@@ -220,7 +222,8 @@ function openCustomizer(item){
   (opts.sauceOptions || []).forEach(s => { czState.sauces[s.id] = { on: false, level: "normal" }; });
   (opts.extraOptions || []).forEach(e => { czState.extras[e.id] = false; });
 
-  document.getElementById("customizeTitle").textContent = `🥪 ${item.name[lang]}`;
+  const imgHtml = item.image ? `<img src="${item.image}" alt="" style="width:100%; max-height:160px; object-fit:cover; border-radius:12px; margin-bottom:10px;">` : "";
+  document.getElementById("customizeTitle").innerHTML = `${imgHtml}🥪 ${item.name[lang]}`;
   renderCustomizeBody();
   updateCustomizeFooter();
   document.getElementById("customizeModal").classList.add("open");
@@ -627,7 +630,8 @@ function buildMenuFromLive(){
           id: i.id,
           name: { ar: i.nameAr, en: i.nameEn },
           price: i.available === false ? null : (i.price ?? null),
-          tag: i.tag || null
+          tag: i.tag || null,
+          image: i.image || null
         }))
     }))
     .filter(cat => cat.items.length > 0);
